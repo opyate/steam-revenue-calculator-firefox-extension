@@ -1,0 +1,18 @@
+{
+   "manifest_version": 2,
+   "name": "Steam Revenue Calculator",
+   "version": "1.0.0",
+   "description": "This plugin shows the game's revenue inside the Steam store page.",
+   "icons": {
+      "512": "icons/icon512.png",
+      "256": "icons/icon256.png",
+      "128": "icons/icon128.png",
+      "96": "icons/icon96.png",
+      "48": "icons/icon48.png"
+   },
+   "content_scripts": [ {
+      "js": [ "content-script.js" ],
+      "matches": [ "https://store.steampowered.com/app/*" ],
+      "run_at": "document_end"
+   } ]  
+}
