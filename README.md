@@ -1,6 +1,6 @@
 A Firefox extension that shows the estimated revenue for a game.
 
-Copied from [this](https://clients2.google.com/service/update2/crx?response=redirect&prodversion=95.0.4638.54&acceptformat=crx2,crx3&x=id%3Dgjhejidajnchnadcangcodljgdmenipa%26uc) [Chrome extension](https://chromewebstore.google.com/detail/gjhejidajnchnadcangcodljgdmenipa) (credit to omer1615).
+Copied from [this](https://clients2.google.com/service/update2/crx?response=redirect&prodversion=95.0.4638.54&acceptformat=crx2,crx3&x=id%3Dgjhejidajnchnadcangcodljgdmenipa%26uc) [Chrome extension](https://chromewebstore.google.com/detail/gjhejidajnchnadcangcodljgdmenipa) with permission of the original author (omer1615).
 
 # Example
 
