@@ -9,7 +9,8 @@ xmlhttp.onreadystatechange=function()
 {
     if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
         var price = getPrice(xmlhttp.responseText);
-    outputToYolo(price);
+        printer("Price is " + abbreviateNumber(price/100));
+        outputToYolo(price);
     }
 }
 xmlhttp.open("GET", url, true);
@@ -27,7 +28,9 @@ function outputToYolo(price)
   const positiveVoteText = document.querySelector( 'label[for="review_type_positive"] .user_reviews_count' );
   const negativeVoteText = document.querySelector( 'label[for="review_type_negative"] .user_reviews_count' );
   const positiveVotes = parseInt( positiveVoteText.textContent.replace( /[(.,)]/g, '' ), 10 );
-  const totalVotes = positiveVotes + parseInt( negativeVoteText.textContent.replace( /[(.,)]/g, '' ), 10 );
+  const negativeVotes = parseInt( negativeVoteText.textContent.replace( /[(.,)]/g, '' ), 10 );
+  const totalVotes = positiveVotes + negativeVotes;
+  printer("reviews, negative=" + negativeVotes + " positive=" + positiveVotes + " total=" + totalVotes);
 
 
   const subtitle = document.createElement( 'div' );
@@ -108,43 +111,54 @@ const RevenueBreakdown = {
 function calculateRevenue(numberOfReviews, price) {
   // Source: https://newsletter.gamediscover.co/p/steam-sales-estimates-why-game-popularity
   const K = () => {
-    if (numberOfReviews < 999) {
+    if (numberOfReviews <= 999/20) {
       return 20;
     }
 
-    if (numberOfReviews < 9999) {
+    if (numberOfReviews <= 9999/36) {
       return 36;
     }
 
-    if (numberOfReviews < 49999) {
+    if (numberOfReviews <= 49999/49) {
       return 49;
     }
 
-    if (numberOfReviews < 99999) {
+    if (numberOfReviews <= 99999/59) {
       return 59;
     }
 
     return 48;
   };
 
-  const numberOfCopiesSold = numberOfReviews * K();
+  const reviewsToSalesMultiplier = K();
+  printer("reviewsToSalesMultiplier is " + reviewsToSalesMultiplier + " (see https://newsletter.gamediscover.co/p/steam-sales-estimates-why-game-popularity)");
+  const numberOfCopiesSold = numberOfReviews * reviewsToSalesMultiplier;
+  printer("numberOfCopiesSold (numberOfReviews * reviewsToSalesMultiplier) is " + numberOfCopiesSold);
   const grossRevenue = numberOfCopiesSold * price;
+  printer("grossRevenue (numberOfCopiesSold * price) is " + abbreviateNumber(grossRevenue/100));
 
   return grossRevenue;
 }
 
 function revenueBreakdown(grossRevenue) {
   const adjustedRegionalPricing = grossRevenue * 0.09;
+  printer("adjustedRegionalPricing (grossRevenue * 0.09) is " + abbreviateNumber(adjustedRegionalPricing/100));
   const discounts = grossRevenue * 0.2;
+  printer("discounts (grossRevenue * 0.2) is " + abbreviateNumber(discounts/100));
   const refunds = grossRevenue * 0.12;
+  printer("refunds (grossRevenue * 0.12) is " + abbreviateNumber(refunds/100));
 
   const realRevenue = grossRevenue - adjustedRegionalPricing - discounts - refunds;
+  printer("realRevenue (grossRevenue - adjustedRegionalPricing - discounts - refunds) is " + abbreviateNumber(realRevenue/100));
 
   // TODO: Add tiered pricing.
   const steamFee = realRevenue * 0.3;
+  printer("steamFee (realRevenue * 0.3) is " + abbreviateNumber(steamFee/100));
   const vat = realRevenue * 0.2;
+  printer("vat (realRevenue * 0.2) is " + abbreviateNumber(vat/100));
 
   const netRevenue = realRevenue - steamFee - vat;
+  printer("netRevenue (realRevenue - steamFee - vat) is " + abbreviateNumber(netRevenue/100));
 
   return {
     adjustedRegionalPricing,
@@ -155,4 +169,8 @@ function revenueBreakdown(grossRevenue) {
     steamFee,
     vat
   };
+}
+
+function printer(msg) {
+  console.log("%c[SteamRevCalc]" + "%c " + msg, "background: #001f3f; color: #7fdbff", "background: #ffffff; color: #000000");
 }
