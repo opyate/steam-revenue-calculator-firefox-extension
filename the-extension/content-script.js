@@ -1,5 +1,7 @@
 // everything below as-is copied from https://chromewebstore.google.com/detail/gjhejidajnchnadcangcodljgdmenipa
+// extra logging added to xmlhttp.onreadystatechange
 var CurrentAppID;
+
 //https://store.steampowered.com/api/appdetails?appids=1015180&cc=us&filters=price_overview
 
 var xmlhttp = new XMLHttpRequest();
@@ -22,51 +24,74 @@ xmlhttp.send();
 
 function getPrice(response) {
   var arr = JSON.parse(response);
-  return arr[GetCurrentAppID()]["data"]["price_overview"]["initial"];
-}
+  var currentAppID = GetCurrentAppID();
 
-
-
-function outputToYolo(price)
-{
-  const positiveVoteText = document.querySelector( 'label[for="review_type_positive"] .user_reviews_count' );
-  const negativeVoteText = document.querySelector( 'label[for="review_type_negative"] .user_reviews_count' );
-  const positiveVotes = parseInt( positiveVoteText.textContent.replace( /[(.,)]/g, '' ), 10 );
-  const negativeVotes = parseInt( negativeVoteText.textContent.replace( /[(.,)]/g, '' ), 10 );
-  const totalVotes = positiveVotes + negativeVotes;
-  printer("reviews, negative=" + negativeVotes + " positive=" + positiveVotes + " total=" + totalVotes);
-
-
-  const subtitle = document.createElement( 'div' );
-  subtitle.className = 'subtitle column';
-  subtitle.textContent = 'Est. Net Revenue:';
-
-  const summary = document.createElement( 'div' );
-
-  //The old methhod
-  //var netRevenue = abbreviateNumber((price /100) * totalVotes * 15);
-
-  //The new one
-  var grossRevenue = calculateRevenue(totalVotes, price);
-  var breakdown = revenueBreakdown(grossRevenue);
-  var netRevenue = abbreviateNumber(breakdown.netRevenue / 100);
-
-  summary.innerHTML = '<span class="responsive_reviewdesc">~$ ' + netRevenue +'</span>';
-  
-  const container = document.createElement( 'div' );
-  container.className = 'user_reviews_summary_row';
-
-  container.appendChild( subtitle );
-  container.appendChild( summary );
-
-  let element = document.querySelector( '#userReviews' );
-
-  if( element )
-  {
-    element.appendChild( container );
+  if (arr[currentAppID] && arr[currentAppID]["data"] && arr[currentAppID]["data"]["price_overview"]) {
+    return arr[currentAppID]["data"]["price_overview"]["initial"];
+  } else {
+    return null;
   }
 }
 
+
+
+function outputToYolo(price) 
+{
+  const positiveVoteText = document.querySelector('label[for="review_type_positive"] .user_reviews_count');
+  const negativeVoteText = document.querySelector('label[for="review_type_negative"] .user_reviews_count');
+
+  let positiveVotes = 0;
+  let totalVotes = 0;
+
+  if (positiveVoteText && negativeVoteText) {
+    positiveVotes = parseSteamNumber(positiveVoteText.textContent.replace(/[(.,)]/g, ''), 10);
+    const negativeVotes = parseSteamNumber(negativeVoteText.textContent.replace(/[(.,)]/g, ''), 10);
+    totalVotes = positiveVotes + negativeVotes;
+  }
+
+  //Try to find "all votes" after language based review update
+  const userReviewsCountSpan = document.querySelector('span.user_reviews_count');
+  if (userReviewsCountSpan) {
+    const reviewCountText = userReviewsCountSpan.textContent;
+    if (reviewCountText) {
+      const reviewCountNumber = reviewCountText.replace(/[^\d]/g, ''); 
+      if (reviewCountNumber) {
+        totalVotes = parseSteamNumber(reviewCountNumber, 10);
+      }
+    }
+  }
+
+  const subtitle = document.createElement('div');
+  subtitle.className = 'subtitle column';
+  subtitle.textContent = 'Est. Net Revenue:';
+
+  const summary = document.createElement('div');
+
+  if (price && totalVotes !== 0) {
+    const grossRevenue = calculateRevenue(totalVotes, price);
+    const breakdown = revenueBreakdown(grossRevenue);
+    let netRevenue = abbreviateNumber(breakdown.netRevenue / 100);
+
+    summary.innerHTML = '<span class="responsive_reviewdesc">~$ ' + netRevenue + '</span>';
+  }
+  else
+  {
+    summary.innerHTML = '<span class="responsive_reviewdesc">---</span>';
+  }
+
+
+  const container = document.createElement('div');
+  container.className = 'user_reviews_summary_row';
+
+  container.appendChild(subtitle);
+  container.appendChild(summary);
+
+  const element = document.querySelector('#userReviews');
+
+  if (element) {
+    element.appendChild(container);
+  }
+}
 
 function GetCurrentAppID()
 {
@@ -114,55 +139,45 @@ const RevenueBreakdown = {
 
 function calculateRevenue(numberOfReviews, price) {
   // Source: https://newsletter.gamediscover.co/p/steam-sales-estimates-why-game-popularity
+  // Thanks to Juan Uys for the fix. https://juanuys.com
   const K = () => {
     if (numberOfReviews <= 999/20) {
-      return 20;
+    return 20;
     }
-
+   
     if (numberOfReviews <= 9999/36) {
-      return 36;
+    return 36;
     }
-
+   
     if (numberOfReviews <= 49999/49) {
-      return 49;
+    return 49;
     }
-
+   
     if (numberOfReviews <= 99999/59) {
-      return 59;
+    return 59;
     }
-
+   
     return 48;
   };
 
-  const reviewsToSalesMultiplier = K();
-  printer("reviewsToSalesMultiplier is " + reviewsToSalesMultiplier + " (see https://newsletter.gamediscover.co/p/steam-sales-estimates-why-game-popularity)");
-  const numberOfCopiesSold = numberOfReviews * reviewsToSalesMultiplier;
-  printer("numberOfCopiesSold (numberOfReviews * reviewsToSalesMultiplier) is " + numberOfCopiesSold);
+  const numberOfCopiesSold = numberOfReviews * K();
   const grossRevenue = numberOfCopiesSold * price;
-  printer("grossRevenue (numberOfCopiesSold * price) is " + abbreviateNumber(grossRevenue/100));
 
   return grossRevenue;
 }
 
 function revenueBreakdown(grossRevenue) {
   const adjustedRegionalPricing = grossRevenue * 0.09;
-  printer("adjustedRegionalPricing (grossRevenue * 0.09) is " + abbreviateNumber(adjustedRegionalPricing/100));
   const discounts = grossRevenue * 0.2;
-  printer("discounts (grossRevenue * 0.2) is " + abbreviateNumber(discounts/100));
   const refunds = grossRevenue * 0.12;
-  printer("refunds (grossRevenue * 0.12) is " + abbreviateNumber(refunds/100));
 
   const realRevenue = grossRevenue - adjustedRegionalPricing - discounts - refunds;
-  printer("realRevenue (grossRevenue - adjustedRegionalPricing - discounts - refunds) is " + abbreviateNumber(realRevenue/100));
 
   // TODO: Add tiered pricing.
   const steamFee = realRevenue * 0.3;
-  printer("steamFee (realRevenue * 0.3) is " + abbreviateNumber(steamFee/100));
   const vat = realRevenue * 0.2;
-  printer("vat (realRevenue * 0.2) is " + abbreviateNumber(vat/100));
 
   const netRevenue = realRevenue - steamFee - vat;
-  printer("netRevenue (realRevenue - steamFee - vat) is " + abbreviateNumber(netRevenue/100));
 
   return {
     adjustedRegionalPricing,
@@ -175,6 +190,24 @@ function revenueBreakdown(grossRevenue) {
   };
 }
 
-function printer(msg) {
-  console.log("%c[SteamRevCalc]" + "%c " + msg, "background: #001f3f; color: #7fdbff", "background: #ffffff; color: #000000");
+function parseSteamNumber(str) {
+  if (!str) return 0;
+
+  // Detect Eastern Arabic numerals (٠١٢٣٤٥٦٧٨٩)
+  const hasArabicDigits = /[٠-٩]/.test(str);
+
+  if (hasArabicDigits) {
+    const easternArabic = ['٠','١','٢','٣','٤','٥','٦','٧','٨','٩'];
+    const westernArabic = ['0','1','2','3','4','5','6','7','8','9'];
+
+    easternArabic.forEach((digit, i) => {
+      const regex = new RegExp(digit, 'g');
+      str = str.replace(regex, westernArabic[i]);
+    });
+  }
+
+  // Remove commas, spaces, periods, etc.
+  str = str.replace(/[^\d]/g, '');
+
+  return parseInt(str, 10) || 0;
 }
