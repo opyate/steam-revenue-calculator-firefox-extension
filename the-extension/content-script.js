@@ -1,5 +1,5 @@
 // everything below as-is copied from https://chromewebstore.google.com/detail/gjhejidajnchnadcangcodljgdmenipa
-// extra logging added to xmlhttp.onreadystatechange
+// logging fixed and extended in xmlhttp.onreadystatechange
 var CurrentAppID;
 
 //https://store.steampowered.com/api/appdetails?appids=1015180&cc=us&filters=price_overview
@@ -12,10 +12,10 @@ xmlhttp.onreadystatechange=function()
   if (xmlhttp.readyState == 4) {
     if (xmlhttp.status == 200) {
       var price = getPrice(xmlhttp.responseText);
-      printer('Price is ' + abbreviateNumber(price / 100));
+      console.log('[SteamRevCalc] Price is ' + abbreviateNumber(price / 100));
       outputToYolo(price);
     } else {
-      printer('API request failed with ' + xmlhttp.status);
+      console.error('[SteamRevCalc] API request failed with ' + xmlhttp.status);
     }
   }
 }
