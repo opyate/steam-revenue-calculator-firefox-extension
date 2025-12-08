@@ -7,17 +7,21 @@ var url = "https://store.steampowered.com/api/appdetails?appids="+ GetCurrentApp
 
 xmlhttp.onreadystatechange=function() 
 {
-    if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
-        var price = getPrice(xmlhttp.responseText);
-        printer("Price is " + abbreviateNumber(price/100));
-        outputToYolo(price);
+  if (xmlhttp.readyState == 4) {
+    if (xmlhttp.status == 200) {
+      var price = getPrice(xmlhttp.responseText);
+      printer('Price is ' + abbreviateNumber(price / 100));
+      outputToYolo(price);
+    } else {
+      printer('API request failed with ' + xmlhttp.status);
     }
+  }
 }
 xmlhttp.open("GET", url, true);
 xmlhttp.send();
 
 function getPrice(response) {
-    var arr = JSON.parse(response);
+  var arr = JSON.parse(response);
   return arr[GetCurrentAppID()]["data"]["price_overview"]["initial"];
 }
 
